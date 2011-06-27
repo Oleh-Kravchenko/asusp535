@@ -74,6 +74,7 @@ obj-$(CONFIG_MACH_H5000)	+= h5000.o
 obj-$(CONFIG_MACH_HIMALAYA)	+= himalaya.o
 obj-$(CONFIG_MACH_MAGICIAN)	+= magician.o
 obj-$(CONFIG_MACH_MIOA701)	+= mioa701.o mioa701_bootresume.o
+obj-$(CONFIG_MACH_ASUSP535)	+= asusp535.o
 obj-$(CONFIG_PXA_EZX)           += ezx.o
 obj-$(CONFIG_MACH_MP900C)	+= mp900.o
 obj-$(CONFIG_MACH_PALMTE2)	+= palmte2.o
@@ -96,3 +97,4 @@ obj-$(CONFIG_MACH_RAUMFELD_SPEAKER)	+= raumfeld.o
 obj-$(CONFIG_MACH_ZIPIT2)	+= z2.o
 
 obj-$(CONFIG_TOSA_BT)		+= tosa-bt.o
+obj-$(CONFIG_ASUSP535_RFKILL)	+= asusp535_rfkill.o

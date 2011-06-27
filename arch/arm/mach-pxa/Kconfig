@@ -303,6 +303,16 @@ config MACH_MIOA701
 	  MIO A701. Currently there is only basic support
 	  for this PDA.
 
+config MACH_ASUSP535
+	bool "Asus P535 Support"
+	select PXA27x
+	select IWMMXT
+	select HAVE_PWM
+	select GPIO_SYSFS
+	help
+	  Say Y here if you intend to run this kernel on a
+	  Asus P535, for support please visit: <http://www.kaa.org.ua/>
+
 config PXA_EZX
 	bool "Motorola EZX Platform"
 	select HAVE_PWM
@@ -682,6 +692,13 @@ config SHARPSL_PM
 	bool
 	select APM_EMULATION
 	select SHARPSL_PM_MAX1111
+config ASUSP535_RFKILL
+	tristate "Control the state of built-in chips on Asus P535"
+	depends on MACH_ASUSP535
+	select RFKILL
+	help
+	  This is a simple driver that is able to control
+	  the state of built in gsm, gps, bluetooth chip on Asus P535.
 
 config SHARPSL_PM_MAX1111
 	bool
