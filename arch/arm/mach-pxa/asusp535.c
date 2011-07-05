@@ -42,6 +42,7 @@
 #include <mach/pxa27x_keypad.h>
 #include <mach/mfp-pxa27x.h>
 #include <mach/asusp535.h>
+#include <mach/ohci.h>
 
 #include "generic.h"
 #include "devices.h"
@@ -226,7 +227,7 @@ static struct platform_device asusp535_leds = {
  * MMC
  ******************************************************************************/
 
-static struct pxamci_platform_data asusp535_mci_platform_data = {
+static struct pxamci_platform_data asusp535_mci_info = {
 	.detect_delay_ms	= 200,
 	.ocr_mask			= MMC_VDD_32_33 | MMC_VDD_33_34,
 	.gpio_card_detect	= GPIO_ASUSP535_SD_DETECT_N,
@@ -299,7 +300,7 @@ static unsigned int asusp535_mkbd[] = {
 	KEY(2, 5, KEY_H),			// CAPTURE
 };
 
-static struct pxa27x_keypad_platform_data asusp535_keypad_data = {
+static struct pxa27x_keypad_platform_data asusp535_keypad_info = {
 	.matrix_key_rows	= 3,
 	.matrix_key_cols	= 6,
 	.matrix_key_map		= asusp535_mkbd,
@@ -421,6 +422,11 @@ static struct platform_device asusp535_rfk = {
 	.id		= -1,
 };
 
+static struct pxaohci_platform_data asusp535_ohci_info = {
+	.port_mode	= PMM_PERPORT_MODE,
+	.flags		= ENABLE_PORT1,
+};
+
 static struct platform_device *devices[] __initdata = {
 	&asusp535_buttons,
 	&asusp535_leds,
@@ -441,11 +447,13 @@ static void __init asusp535_init(void)
 
 	set_pxa_fb_info(&asusp535_pxafb_info);
 
-	pxa_set_keypad_info(&asusp535_keypad_data);
+	pxa_set_keypad_info(&asusp535_keypad_info);
 
-	pxa_set_mci_info(&asusp535_mci_platform_data);
+	pxa_set_mci_info(&asusp535_mci_info);
 
 	pxa_set_udc_info(&asusp535_udc_info);
+
+	pxa_set_ohci_info(&asusp535_ohci_info);
 
 	platform_add_devices(devices, ARRAY_SIZE(devices));
 }
