@@ -2,7 +2,7 @@
  * Support for Asus P535 PDA
  *
  * (C) 2008 Alexander Tarasikov <alex_dfr@mail.ru>
- * (C) 2010 Oleg Kravchenko <oleg@kaa.org.ua>
+ * (C) 2011 Oleg Kravchenko <oleg@kaa.org.ua>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 #include <linux/input.h>
 #include <linux/gpio.h>
 #include <linux/gpio_keys.h>
-//#include <linux/pda_power.h>
+#include <linux/pda_power.h>
 #include <linux/wm97xx.h>
 #include <linux/i2c/pca953x.h>
 #include <linux/pwm_backlight.h>
@@ -29,31 +29,25 @@
 #include <asm/mach/map.h>
 #include <asm/mach/arch.h>
 #include <asm/mach-types.h>
-
 #include <mach/pxa27x-udc.h>
-
 #include <mach/mmc.h>
 #include <mach/udc.h>
-//#include <mach/rtc.h>
-#include <plat/i2c.h>
 #include <mach/pxafb.h>
-//#include <mach/pxa-regs.h>
 #include <mach/pxa2xx-regs.h>
 #include <mach/pxa27x_keypad.h>
 #include <mach/mfp-pxa27x.h>
 #include <mach/asusp535.h>
 #include <mach/ohci.h>
 
+#include <plat/i2c.h>
+
 #include "generic.h"
 #include "devices.h"
 
-/******************************************************************************
- * Pin configuration
- ******************************************************************************/
+/****************************************************************************
+ * GPIO CONFIGURATION
+ ***************************************************************************/
 static unsigned long asusp535_pin_config[] __initdata = {
-	/* GPIO11_GPIO | WAKEUP_ON_EDGE_BOTH, */
-	/* GPIO113_GPIO | WAKEUP_ON_EDGE_RISE, */
-
 	/* AC97 */
 	GPIO28_AC97_BITCLK,
 	GPIO29_AC97_SDATA_IN_0,
@@ -122,6 +116,9 @@ static unsigned long asusp535_pin_config[] __initdata = {
 	GPIO76_LCD_PCLK,
 	GPIO77_LCD_BIAS,
 
+	/* TOUCHSCREEN */
+	GPIO113_GPIO | WAKEUP_ON_EDGE_RISE,
+
 	/* LCD brightness */
 	GPIO79_PWM2_OUT,
 
@@ -166,12 +163,13 @@ static unsigned long asusp535_pin_config[] __initdata = {
 	MFP_CFG_OUT(GPIO54, AF0, DRIVE_LOW), /* Bluetooth Power */
 
 	/* USB */
+	GPIO11_GPIO | WAKEUP_ON_EDGE_BOTH,
 	MFP_CFG_OUT(GPIO89, AF2, DRIVE_LOW),
 };
 
-/******************************************************************************
- * I2C GPIO Expanders
- ******************************************************************************/
+/****************************************************************************
+ * I2C GPIO EXPANDER
+ ***************************************************************************/
 static struct pca953x_platform_data gpio_exp[] = {
 	[0] = {
 		.gpio_base	= EGPIO_BASE,
@@ -186,7 +184,9 @@ struct i2c_board_info asusp535_i2c_board_info[] = {
 	},
 };
 
-/* LEDS */
+/****************************************************************************
+ * LEDS
+ ***************************************************************************/
 static struct gpio_led asusp535_gpio_leds[] = {
 	{
 		.name			= "asusp535:keylight",
@@ -223,10 +223,9 @@ static struct platform_device asusp535_leds = {
 	},
 };
 
-/******************************************************************************
- * MMC
- ******************************************************************************/
-
+/****************************************************************************
+ * MMC/SD
+ ***************************************************************************/
 static struct pxamci_platform_data asusp535_mci_info = {
 	.detect_delay_ms	= 200,
 	.ocr_mask			= MMC_VDD_32_33 | MMC_VDD_33_34,
@@ -235,103 +234,107 @@ static struct pxamci_platform_data asusp535_mci_info = {
 	.gpio_card_ro		= -1,
 };
 
-/******************************************************************************
+/****************************************************************************
  * UDC
- ******************************************************************************/
-
+ ***************************************************************************/
 static void udc_power_command(int cmd)
 {
 	switch(cmd)
 	{
 		case PXA2XX_UDC_CMD_DISCONNECT:
-//			UP2OCR &= ~(UP2OCR_DMPUE | UP2OCR_DPPUE | UP2OCR_HXOE);
-//			gpio_set_value_cansleep(GPIO_ASUSP535_CHARHING, 0);
+//			UP2OCR = UP2OCR_HXOE;
+			UP2OCR &= ~(UP2OCR_DMPUE | UP2OCR_DPPUE | UP2OCR_HXOE);
 			gpio_set_value_cansleep(GPIO_ASUSP535_USB_PULLUP, 0);
+			gpio_set_value_cansleep(GPIO_ASUSP535_CHARHING, 0);
+			ASUSP535_DBG("PXA2XX_UDC_CMD_DISCONNECT\n");
 			break;
 
 		case PXA2XX_UDC_CMD_CONNECT:
-//			UP2OCR |= (UP2OCR_DMPUE | UP2OCR_DPPUE | UP2OCR_HXOE);
+//			UP2OCR |= (UP2OCR_DMPUE | UP2OCR_HXOE);
+			UP2OCR |= (UP2OCR_DMPUE | UP2OCR_DPPUE | UP2OCR_HXOE);
 			gpio_set_value_cansleep(GPIO_ASUSP535_USB_PULLUP, 1);
-//			gpio_set_value_cansleep(GPIO_ASUSP535_CHARHING, 1);
+			gpio_set_value_cansleep(GPIO_ASUSP535_CHARHING, 1);
+			ASUSP535_DBG("PXA2XX_UDC_CMD_CONNECT\n");
 			break;
 
 		default:
-			printk(KERN_INFO "udc_control: unknown command (0x%x)!\n", cmd);
+			ASUSP535_DBG("Unknown UDC command 0x%x\n", cmd);
 			break;
-    }
+	}
 }
 
 static int is_usb_connected(void)
 {
-	return gpio_get_value(GPIO_ASUSP535_USB_CABLE_DETECT);
+	int res = gpio_get_value(GPIO_ASUSP535_USB_CABLE_DETECT);
+
+	ASUSP535_DBG("%d\n", res);
+
+	return res;
 }
 
 static struct pxa2xx_udc_mach_info asusp535_udc_info = {
 	.udc_is_connected	= is_usb_connected,
-	.gpio_vbus			= -1, //GPIO_ASUSP535_USB_CABLE_DETECT,
-//	.gpio_vbus_inverted	= 0,
 	.udc_command		= udc_power_command,
-	.gpio_pullup		= -1, //GPIO_ASUSP535_USB_PULLUP,
+	.gpio_pullup		= -1,
+	.gpio_vbus			= -1,
 };
 
-/******************************************************************************
- * Matrix keypad
- ******************************************************************************/
+/****************************************************************************
+ * MATRIX KEYBOARD
+ ***************************************************************************/
 static unsigned int asusp535_mkbd[] = {
-	KEY(0, 0, KEY_R),			// MENU_RIGHT
-	KEY(0, 1, KEY_O),			// MENU_LEFT
-	KEY(0, 2, KEY_T),			// CALL
-	KEY(0, 3, KEY_O),			// REFRESH
+	KEY(0, 0, KEY_R),			/* MENU_RIGHT */
+	KEY(0, 1, KEY_O),			/* MENU_LEFT */
+	KEY(0, 2, KEY_T),			/* CALL */
+	KEY(0, 3, KEY_O),			/* REFRESH */
 	KEY(0, 4, KEY_4),
 	KEY(0, 5, KEY_5),
 
-	KEY(1, 0, KEY_6),			// OK
-	KEY(1, 1, KEY_7),			// HANGUP
-	KEY(1, 2, KEY_PAGEDOWN),		// VOLUME-
-	KEY(1, 3, KEY_PAGEUP),			// VOLUME+
-	KEY(1, 4, KEY_A),			// RECORD
-	KEY(1, 5, KEY_B),			// FOCUS
+	KEY(1, 0, KEY_6),			/* OK */
+	KEY(1, 1, KEY_7),			/* HANGUP */
+	KEY(1, 2, KEY_PAGEDOWN),	/* VOLUME- */
+	KEY(1, 3, KEY_PAGEUP),		/* VOLUME+ */
+	KEY(1, 4, KEY_A),			/* RECORD */
+	KEY(1, 5, KEY_B),			/* FOCUS */
 
 	KEY(2, 0, KEY_UP),
 	KEY(2, 1, KEY_ENTER),
 	KEY(2, 2, KEY_LEFT),
 	KEY(2, 3, KEY_RIGHT),
 	KEY(2, 4, KEY_DOWN),
-	KEY(2, 5, KEY_H),			// CAPTURE
+	KEY(2, 5, KEY_H),			/* CAPTURE */
 };
 
 static struct pxa27x_keypad_platform_data asusp535_keypad_info = {
-	.matrix_key_rows	= 3,
-	.matrix_key_cols	= 6,
-	.matrix_key_map		= asusp535_mkbd,
+	.matrix_key_rows		= 3,
+	.matrix_key_cols		= 6,
+	.matrix_key_map			= asusp535_mkbd,
 	.matrix_key_map_size	= ARRAY_SIZE(asusp535_mkbd),
-
-	.debounce_interval	= 30,
+	.debounce_interval		= 30,
 };
 
-/******************************************************************************
- * GPIO Keys
- ******************************************************************************/
-
+/****************************************************************************
+ * GPIO KEYS
+ ***************************************************************************/
 static struct gpio_keys_button asusp535_gpio_buttons[] = {
-	{KEY_P, GPIO_P535_POWER_KEY,	1, "Power Button" },
-	{KEY_H, GPIO_P535_HOLD_SWITCH,	1, "Hold switch" },
-	{KEY_B, GPIO_P535_BATTERY_DOOR,	1, "Battery door" },
+	{ KEY_P, GPIO_P535_POWER_KEY,		1, "Power Button" },
+	{ KEY_H, GPIO_P535_HOLD_SWITCH,		1, "Hold switch" },
+	{ KEY_B, GPIO_P535_BATTERY_DOOR,	1, "Battery door" },
 	{
-		.type	= EV_SW,
-		.code	= SW_HEADPHONE_INSERT,
-		.gpio	= 14,
-		.desc	= "HeadPhone insert",
-		.active_low = 1,
-		.debounce_interval = 300,
+		.type				= EV_SW,
+		.code				= SW_HEADPHONE_INSERT,
+		.gpio				= 14,
+		.desc				= "HeadPhone insert",
+		.active_low			= 1,
+		.debounce_interval	= 300,
 	},
 	{
-		.type	= EV_SW,
-		.code	= KEY_HP,
-		.gpio	= 16,
-		.desc	= "KEY_HP",
-		.active_low = 1,
-		.debounce_interval = 300,
+		.type				= EV_SW,
+		.code				= KEY_HP,
+		.gpio				= 16,
+		.desc				= "KEY_HP",
+		.active_low			= 1,
+		.debounce_interval	= 300,
 	},
 };
 
@@ -342,16 +345,15 @@ static struct gpio_keys_platform_data asusp535_buttons_data = {
 
 static struct platform_device asusp535_buttons = {
 	.name	= "gpio-keys",
-	.id	    = -1,
-	.dev    =
-	{
+	.id		= -1,
+	.dev	= {
 		.platform_data = &asusp535_buttons_data,
 	},
 };
 
-/******************************************************************************
- * Framebuffer
- ******************************************************************************/
+/****************************************************************************
+ * FRAMEBUFFER
+ ***************************************************************************/
 static void asusp535_lcd_power(int on, struct fb_var_screeninfo *si)
 {
 	if (on) {
@@ -364,67 +366,75 @@ static void asusp535_lcd_power(int on, struct fb_var_screeninfo *si)
 }
 
 static struct pxafb_mode_info asusp535_ltm0305a776c = {
-	.pixclock	= 153846,
-	.xres		= 240,
-	.yres		= 320,
-	.bpp		= 16,
-	.hsync_len	= 10,
-	.left_margin	= 10,
-	.right_margin	= 19,
-	.vsync_len	= 2,
+	.pixclock		= 156000,
+	.xres			= 240,
+	.yres			= 320,
+	.bpp			= 16,
+	.hsync_len		= 10,
+	.left_margin	= 20,
+	.right_margin	= 10,
+	.vsync_len		= 2,
 	.upper_margin	= 2,
 	.lower_margin	= 2,
-	.sync		= FB_SYNC_HOR_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT,
+	.sync			= FB_SYNC_HOR_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT,
 };
 
 static struct pxafb_mach_info asusp535_pxafb_info = {
 	.modes			= &asusp535_ltm0305a776c,
 	.num_modes		= 1,
-	//.lcd_conn		= LCD_COLOR_TFT_16BPP | LCD_PCLK_EDGE_RISE,
+	.lcd_conn		= LCD_COLOR_TFT_16BPP | LCD_PCLK_EDGE_RISE,
 	.lccr0			= LCCR0_Act | LCCR0_Sngl | LCCR0_Color,
 	.lccr3			= LCCR3_OutEnH | LCCR3_PixRsEdg,
 	.pxafb_lcd_power	= asusp535_lcd_power,
 };
 
-/* touchscreen*/
+/****************************************************************************
+ * TOUCHSCREEN
+ ***************************************************************************/
 static struct platform_device asusp535_touchscreen = {
-	.name           = "wm97xx-touch",
+	.name			= "wm97xx-touch",
 };
 
-/* LCD Backlight */
+/****************************************************************************
+ * LCD BACKLIGHT
+ ***************************************************************************/
 static struct platform_pwm_backlight_data asusp535_backlight_data = {
-	.pwm_id		= 2,
+	.pwm_id			= 2,
 	.max_brightness	= 255,
 	.dft_brightness	= 150,
 	.pwm_period_ns	= 19692,
 };
 
 static struct platform_device asusp535_backlight = {
-	.name		= "pwm-backlight",
-	.dev		= {
+	.name	= "pwm-backlight",
+	.dev	= {
 		.parent = &pxa27x_device_pwm0.dev,
 		.platform_data = &asusp535_backlight_data,
 	},
 };
 
+/****************************************************************************
+ * USB HOST
+ ***************************************************************************/
+static struct pxaohci_platform_data asusp535_ohci_info = {
+	.port_mode		= PMM_NPS_MODE,
+	.flags			= OC_MODE_PERPORT | ENABLE_PORT1,
+	.power_on_delay	= 8,
+};
+
 static struct platform_device asusp535_pcm = {
 	.name	= "pxa2xx-pcm",
-	.id	= 0,
+	.id		= 0,
 };
 
 static struct platform_device asusp535_ac97 = {
 	.name	= "pxa2xx-ac97",
-	.id	= 0,
+	.id		= 0,
 };
 
 static struct platform_device asusp535_rfk = {
 	.name	= "asusp535-rfk",
 	.id		= -1,
-};
-
-static struct pxaohci_platform_data asusp535_ohci_info = {
-	.port_mode	= PMM_PERPORT_MODE,
-	.flags		= ENABLE_PORT1,
 };
 
 static struct platform_device *devices[] __initdata = {

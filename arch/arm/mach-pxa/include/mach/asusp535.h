@@ -74,4 +74,8 @@
 /* CHARGING */
 #define GPIO_ASUSP535_CHARHING		EGPIO_BANK(9)
 
+
+#define ASUSP535_DBG(format, args...) \
+	printk(KERN_INFO "%s:%d %s: " format, __FILE__, __LINE__, __func__, ##args)
+
 #endif /* __ASUSP535_H */
