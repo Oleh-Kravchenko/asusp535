@@ -593,6 +593,9 @@ static int if_cs_prog_helper(struct if_cs_card *card, const struct firmware *fw)
 
 	lbs_deb_enter(LBS_DEB_CS);
 
+#ifdef CONFIG_LIBERTAS_CS_POCKETPC_FIX
+	scratch = if_cs_read16(card, IF_CS_SCRATCH - 1) >> 8;
+#else
 	/*
 	 * This is the only place where an unaligned register access happens on
 	 * the CF8305 card, therefore for the sake of speed of the driver, we do
@@ -602,6 +605,7 @@ static int if_cs_prog_helper(struct if_cs_card *card, const struct firmware *fw)
 		scratch = if_cs_read16(card, IF_CS_SCRATCH) >> 8;
 	else
 		scratch = if_cs_read8(card, IF_CS_SCRATCH);
+#endif /* CONFIG_LIBERTAS_CS_POCKETPC_FIX */
 
 	/* "If the value is 0x5a, the firmware is already
 	 * downloaded successfully"
@@ -729,7 +733,21 @@ static int if_cs_prog_real(struct if_cs_card *card, const struct firmware *fw)
 		}
 	}
 
+#ifdef CONFIG_LIBERTAS_CS_POCKETPC_FIX
+	int i;
+	ret = -ETIME;
+	/* wait when firmware ready */
+	for (i = 0; i < 40000; i++) {
+		if ((if_cs_read16(card, IF_CS_SCRATCH - 1) >> 8) == 0x5a)
+		{
+			ret = 0;
+			break;
+		}
+		udelay(5);
+	}
+#else
 	ret = if_cs_poll_while_fw_download(card, IF_CS_SCRATCH, 0x5a);
+#endif /* CONFIG_LIBERTAS_CS_POCKETPC_FIX */
 	if (ret < 0)
 		pr_err("firmware download failed\n");
 

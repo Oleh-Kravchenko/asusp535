@@ -20,6 +20,12 @@ config LIBERTAS_CS
 	---help---
 	  A driver for Marvell Libertas 8385 CompactFlash devices.
 
+config LIBERTAS_CS_POCKETPC_FIX
+	bool "Pocket PC fix"
+	depends on LIBERTAS_CS
+	---help---
+	  Use shifted IF_CS_SCRATCH register. Only for 8385!
+
 config LIBERTAS_SDIO
 	tristate "Marvell Libertas 8385/8686/8688 SDIO 802.11b/g cards"
 	depends on LIBERTAS && MMC
