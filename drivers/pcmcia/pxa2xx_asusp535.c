@@ -26,7 +26,7 @@ static int asusp535_pcmcia_hw_init(struct soc_pcmcia_socket *skt)
 	ret = gpio_request(GPIO_ASUSP535_PCMCIA_POWER, "PCMCIA Power");
 	if (ret)
 		goto err1;
-	gpio_set_value_cansleep(GPIO_ASUSP535_PCMCIA_POWER, 0);
+	gpio_direction_output(GPIO_ASUSP535_PCMCIA_POWER, 0);
 
 	ret = gpio_request(GPIO_ASUSP535_PCMCIA_RESET, "PCMCIA Reset");
 	if (ret)
