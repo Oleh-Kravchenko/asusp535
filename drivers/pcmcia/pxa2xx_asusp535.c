@@ -79,20 +79,16 @@ static int asusp535_pcmcia_configure_socket
 	const socket_state_t *state
 )
 {
-	gpio_set_value_cansleep(GPIO_ASUSP535_PCMCIA_POWER, 1);
-
-	if(state->flags & SS_RESET)
-	{
-		gpio_set_value(GPIO_ASUSP535_PCMCIA_RESET, 1);
-		udelay(30);
+	if (state->Vcc && !gpio_get_value(GPIO_ASUSP535_PCMCIA_POWER)) {
+		printk(KERN_INFO "asusp535_pcmcia_configure_socket: on\n");
 		gpio_set_value(GPIO_ASUSP535_PCMCIA_RESET, 0);
+		gpio_set_value_cansleep(GPIO_ASUSP535_PCMCIA_POWER, 1);
+
+	} else if (!state->Vcc && gpio_get_value(GPIO_ASUSP535_PCMCIA_POWER)) {
+		printk(KERN_INFO "asusp535_pcmcia_configure_socket: off\n");
+		gpio_set_value(GPIO_ASUSP535_PCMCIA_RESET, 1);
+		gpio_set_value_cansleep(GPIO_ASUSP535_PCMCIA_POWER, 0);
 	}
-
-	if (state->flags & SS_POWERON)
-		printk(KERN_INFO "pcmcia_configure_socket: on\n");
-
-	if ((!state->flags) & SS_POWERON)
-		printk(KERN_INFO "pcmcia_configure_socket: off\n");
 
 	return 0;
 }
@@ -138,8 +134,7 @@ static int __init asusp535_pcmcia_init(void)
 		sizeof(asusp535_pcmcia_ops)
 	);
 
-	if(!ret)
-	{
+	if(!ret) {
 		printk(KERN_INFO "Registering Asus P535 PCMCIA interface.\n");
 		ret = platform_device_add(asusp535_pcmcia_device);
 	}
@@ -152,6 +147,7 @@ static int __init asusp535_pcmcia_init(void)
 
 static void __exit asusp535_pcmcia_exit(void)
 {
+	printk(KERN_INFO "Unregistering Asus P535 PCMCIA interface.\n");
 	platform_device_unregister(asusp535_pcmcia_device);
 }
 
