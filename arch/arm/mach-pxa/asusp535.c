@@ -24,6 +24,7 @@
 #include <linux/wm97xx.h>
 #include <linux/i2c/pca953x.h>
 #include <linux/pwm_backlight.h>
+#include <linux/usb/gpio_vbus.h>
 
 #include <asm/gpio.h>
 #include <asm/mach/map.h>
@@ -164,6 +165,7 @@ static unsigned long asusp535_pin_config[] __initdata = {
 
 	/* USB */
 	GPIO11_GPIO | WAKEUP_ON_EDGE_BOTH,
+	MFP_CFG_OUT(GPIO84, AF0, DRIVE_LOW),
 	MFP_CFG_OUT(GPIO89, AF2, DRIVE_LOW),
 };
 
@@ -237,46 +239,23 @@ static struct pxamci_platform_data asusp535_mci_info = {
 /****************************************************************************
  * UDC
  ***************************************************************************/
-static void udc_power_command(int cmd)
-{
-	switch(cmd)
-	{
-		case PXA2XX_UDC_CMD_DISCONNECT:
-//			UP2OCR = UP2OCR_HXOE;
-			UP2OCR &= ~(UP2OCR_DMPUE | UP2OCR_DPPUE | UP2OCR_HXOE);
-			gpio_set_value_cansleep(GPIO_ASUSP535_USB_PULLUP, 0);
-			gpio_set_value_cansleep(GPIO_ASUSP535_CHARHING, 0);
-			ASUSP535_DBG("PXA2XX_UDC_CMD_DISCONNECT\n");
-			break;
-
-		case PXA2XX_UDC_CMD_CONNECT:
-//			UP2OCR |= (UP2OCR_DMPUE | UP2OCR_HXOE);
-			UP2OCR |= (UP2OCR_DMPUE | UP2OCR_DPPUE | UP2OCR_HXOE);
-			gpio_set_value_cansleep(GPIO_ASUSP535_USB_PULLUP, 1);
-			gpio_set_value_cansleep(GPIO_ASUSP535_CHARHING, 1);
-			ASUSP535_DBG("PXA2XX_UDC_CMD_CONNECT\n");
-			break;
-
-		default:
-			ASUSP535_DBG("Unknown UDC command 0x%x\n", cmd);
-			break;
-	}
-}
-
-static int is_usb_connected(void)
-{
-	int res = gpio_get_value(GPIO_ASUSP535_USB_CABLE_DETECT);
-
-	ASUSP535_DBG("%d\n", res);
-
-	return res;
-}
 
 static struct pxa2xx_udc_mach_info asusp535_udc_info = {
-	.udc_is_connected	= is_usb_connected,
-	.udc_command		= udc_power_command,
-	.gpio_pullup		= -1,
+	.gpio_pullup		= GPIO_ASUSP535_USB_PULLUP,
 	.gpio_vbus			= -1,
+};
+
+static struct gpio_vbus_mach_info gpio_vbus_data = {
+	.gpio_pullup		= -1,
+	.gpio_vbus			= GPIO_ASUSP535_USB_CABLE_DETECT,
+};
+
+static struct platform_device asusp535_gpio_vbus = {
+	.name = "gpio-vbus",
+	.id = -1,
+	.dev = {
+		.platform_data = &gpio_vbus_data,
+	}
 };
 
 /****************************************************************************
@@ -437,7 +416,7 @@ static struct platform_device asusp535_rfk = {
 	.id		= -1,
 };
 
-static struct platform_device *devices[] __initdata = {
+static struct platform_device *asusp535_devices[] __initdata = {
 	&asusp535_buttons,
 	&asusp535_leds,
 	&asusp535_backlight,
@@ -445,11 +424,16 @@ static struct platform_device *devices[] __initdata = {
 	&asusp535_pcm,
 	&asusp535_ac97,
 	&asusp535_rfk,
+	&asusp535_gpio_vbus,
 };
 
 static void __init asusp535_init(void)
 {
 	pxa2xx_mfp_config(ARRAY_AND_SIZE(asusp535_pin_config));
+
+	pxa_set_ffuart_info(NULL);
+	pxa_set_btuart_info(NULL);
+	pxa_set_stuart_info(NULL);
 
 	pxa_set_i2c_info(NULL);
 
@@ -465,15 +449,13 @@ static void __init asusp535_init(void)
 
 	pxa_set_ohci_info(&asusp535_ohci_info);
 
-	platform_add_devices(devices, ARRAY_SIZE(devices));
+	platform_add_devices(asusp535_devices, ARRAY_SIZE(asusp535_devices));
 }
 
 MACHINE_START(ASUSP535, "Asus P535")
-	.phys_io	= 0x40000000,
-	.io_pg_offst	= (io_p2v(0x40000000) >> 18) & 0xfffc,
 	.boot_params	= 0xa0000100,
-	.map_io		= pxa_map_io,
-	.init_irq	= pxa27x_init_irq,
+	.map_io			= pxa_map_io,
+	.init_irq		= pxa27x_init_irq,
 	.init_machine	= asusp535_init,
-	.timer		= &pxa_timer,
+	.timer			= &pxa_timer,
 MACHINE_END
