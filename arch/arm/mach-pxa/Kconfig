@@ -272,6 +272,16 @@ config MACH_VPAC270
 
 comment "End-user Products (sorted by vendor name)"
 
+config MACH_ASUSP535
+	bool "Asus P535 Support"
+	select PXA27x
+	select IWMMXT
+	select HAVE_PWM
+	select GPIO_SYSFS
+	help
+	  Say Y here if you intend to run this kernel on a
+	  Asus P535, for support please visit: <http://www.kaa.org.ua/>
+
 config MACH_H4700
 	bool "HP iPAQ hx4700"
 	select HAVE_PWM
@@ -302,16 +312,6 @@ config MACH_MIOA701
 	  Say Y here if you intend to run this kernel on a
 	  MIO A701. Currently there is only basic support
 	  for this PDA.
-
-config MACH_ASUSP535
-	bool "Asus P535 Support"
-	select PXA27x
-	select IWMMXT
-	select HAVE_PWM
-	select GPIO_SYSFS
-	help
-	  Say Y here if you intend to run this kernel on a
-	  Asus P535, for support please visit: <http://www.kaa.org.ua/>
 
 config PXA_EZX
 	bool "Motorola EZX Platform"

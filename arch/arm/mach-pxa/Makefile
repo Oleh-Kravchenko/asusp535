@@ -69,12 +69,12 @@ obj-$(CONFIG_MACH_COLIBRI320)	+= colibri-pxa3xx.o colibri-pxa320.o
 obj-$(CONFIG_MACH_VPAC270)	+= vpac270.o
 
 # End-user Products
+obj-$(CONFIG_MACH_ASUSP535)	+= asusp535.o
 obj-$(CONFIG_MACH_H4700)	+= hx4700.o
 obj-$(CONFIG_MACH_H5000)	+= h5000.o
 obj-$(CONFIG_MACH_HIMALAYA)	+= himalaya.o
 obj-$(CONFIG_MACH_MAGICIAN)	+= magician.o
 obj-$(CONFIG_MACH_MIOA701)	+= mioa701.o mioa701_bootresume.o
-obj-$(CONFIG_MACH_ASUSP535)	+= asusp535.o
 obj-$(CONFIG_PXA_EZX)           += ezx.o
 obj-$(CONFIG_MACH_MP900C)	+= mp900.o
 obj-$(CONFIG_MACH_PALMTE2)	+= palmte2.o
