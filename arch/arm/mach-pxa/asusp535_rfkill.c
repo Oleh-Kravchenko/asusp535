@@ -43,8 +43,7 @@ static int asusp535_rfk_dev_probe
 		goto err_request;
 
 	*rfk = rfkill_alloc(name, &dev->dev, rfk_type, ops, NULL);
-	if(!*rfk)
-	{
+	if(!*rfk) {
 		ret = -ENOMEM;
 		goto err_rf_alloc;
 	}
@@ -271,6 +270,8 @@ static int asusp535_rfk_probe(struct platform_device *dev)
 	if(ret)
 		goto err_bt;
 
+	return ret;
+
 err_bt:
 	rfkill_unregister(gps_rfk);
 	rfkill_destroy(gps_rfk);
@@ -283,7 +284,7 @@ err_gps:
 	free_gpio_gsm();
 	gsm_rfk = NULL;
 
-err_gsm:	
+err_gsm:
 	return ret;
 }
 
