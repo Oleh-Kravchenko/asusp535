@@ -22,6 +22,7 @@
 #include <linux/gpio_keys.h>
 #include <linux/pda_power.h>
 #include <linux/wm97xx.h>
+#include <linux/regulator/max1586.h>
 #include <linux/i2c/pca953x.h>
 #include <linux/pwm_backlight.h>
 #include <linux/usb/gpio_vbus.h>
@@ -186,7 +187,48 @@ struct i2c_board_info asusp535_i2c_board_info[] = {
 	},
 };
 
-/****************************************************************************
+/***************************************************************************
+ * Voltage Regulator
+ **************************************************************************/
+static struct regulator_consumer_supply max8588_consumers[] = {
+	{
+		.supply = "vcc_core",
+	}
+};
+
+static struct regulator_init_data max8588_v3_info = {
+	.constraints = {
+		.name = "vcc_core range",
+		.min_uV = 1000000,
+		.max_uV = 1705000,
+		.always_on = 1,
+		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
+	},
+	.num_consumer_supplies = ARRAY_SIZE(max8588_consumers),
+	.consumer_supplies = max8588_consumers,
+};
+
+static struct max1586_subdev_data max8588_subdevs[] = {
+	{
+		.name = "vcc_core",
+		.id = MAX1586_V3,
+		.platform_data = &max8588_v3_info},
+};
+
+static struct max1586_platform_data max8588_info = {
+	.subdevs = max8588_subdevs,
+	.num_subdevs = ARRAY_SIZE(max8588_subdevs),
+	.v3_gain = MAX1586_GAIN_NO_R24,
+};
+
+static struct i2c_board_info asusp535_pi2c_board_info[] = {
+	{
+		I2C_BOARD_INFO("max1586", 0x14),
+		.platform_data = &max8588_info,
+	},
+};
+
+/***************************************************************************
  * LEDS
  ***************************************************************************/
 static struct gpio_led asusp535_gpio_leds[] = {
@@ -429,6 +471,8 @@ static struct platform_device *asusp535_devices[] __initdata = {
 
 static void __init asusp535_init(void)
 {
+	UP2OCR = UP2OCR_HXOE;
+
 	pxa2xx_mfp_config(ARRAY_AND_SIZE(asusp535_pin_config));
 
 	pxa_set_ffuart_info(NULL);
@@ -436,8 +480,10 @@ static void __init asusp535_init(void)
 	pxa_set_stuart_info(NULL);
 
 	pxa_set_i2c_info(NULL);
-
 	i2c_register_board_info(0, ARRAY_AND_SIZE(asusp535_i2c_board_info));
+
+	pxa27x_set_i2c_power_info(NULL);
+	i2c_register_board_info(1, ARRAY_AND_SIZE(asusp535_pi2c_board_info));
 
 	set_pxa_fb_info(&asusp535_pxafb_info);
 
