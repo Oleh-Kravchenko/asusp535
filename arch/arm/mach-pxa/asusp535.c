@@ -212,7 +212,8 @@ static struct max1586_subdev_data max8588_subdevs[] = {
 	{
 		.name = "vcc_core",
 		.id = MAX1586_V3,
-		.platform_data = &max8588_v3_info},
+		.platform_data = &max8588_v3_info
+	},
 };
 
 static struct max1586_platform_data max8588_info = {
@@ -392,7 +393,7 @@ static struct pxafb_mode_info asusp535_ltm0305a776c = {
 	.yres			= 320,
 	.bpp			= 16,
 	.hsync_len		= 10,
-	.left_margin	= 20,
+	.left_margin	= 19,
 	.right_margin	= 10,
 	.vsync_len		= 2,
 	.upper_margin	= 2,
