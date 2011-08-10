@@ -256,7 +256,7 @@ static int asusp535_rfk_probe(struct platform_device *dev)
 	int ret;
 
 	ret = asusp535_rfk_dev_probe(dev, &gsm_rfk, "asusp535_gsm",
-		RFKILL_TYPE_UWB, request_gpio_gsm, free_gpio_gsm, &gsm_rfkill_ops);
+		RFKILL_TYPE_WWAN, request_gpio_gsm, free_gpio_gsm, &gsm_rfkill_ops);
 	if(ret)
 		goto err_gsm;
 
