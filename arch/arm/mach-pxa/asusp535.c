@@ -199,8 +199,8 @@ static struct regulator_consumer_supply max8588_consumers[] = {
 static struct regulator_init_data max8588_v3_info = {
 	.constraints = {
 		.name = "vcc_core range",
-		.min_uV = 1000000,
-		.max_uV = 1705000,
+		.min_uV = 1050000,
+		.max_uV = 1450000,
 		.always_on = 1,
 		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
 	},
